@@ -14,6 +14,9 @@ var abc string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 func init() {
 	if len(os.Args) != 1 {
 		abc = os.Args[1]
+	} else {
+		fmt.Printf("Usage: %s [set of symbols]\n", os.Args[0])
+		os.Exit(1)
 	}
 }
 
@@ -28,12 +31,13 @@ func main() {
 		os.Exit(1)
 	}
 	s.EnableMouse()
+	w, h := s.Size()
 	result := print(s)
+	marks := make([]bool, w*h)
 	s.Sync()
 	start := time.Now()
 	for abc != "" {
 		go func() {
-			w, h := s.Size()
 			elapsed := time.Since(start).Abs().Seconds()
 			minutes := 0
 			seconds := 0
@@ -68,17 +72,21 @@ func main() {
 						for j := 0; j < h; j++ {
 							if abc[0] == byte(result[i][j]) {
 								s.SetContent(i, j, result[i][j], nil, tcell.StyleDefault.Background(tcell.ColorGreen))
+								marks[i*j] = true
 							}
 						}
 					}
 					_, abc = abc[0], abc[1:]
 				} else {
-					blink(s, result[x][y], x, y)
+					blink(s, result[x][y], x, y, marks[x*y])
 				}
 			}
 		}
 		if len(abc) > 0 {
-			s.SetContent(0, 0, rune(abc[0]), nil, tcell.StyleDefault.Reverse(true))
+			nextchar := fmt.Sprintf("next char %c", abc[0])
+			for i := 0; i < len(nextchar); i++ {
+				s.SetContent(i, 0, rune(nextchar[i]), nil, tcell.StyleDefault.Reverse(true))
+			}
 		} else {
 			break
 		}
@@ -87,12 +95,16 @@ func main() {
 	fmt.Printf("You win! %s\n", time.Since(start))
 }
 
-func blink(s tcell.Screen, letter rune, x, y int) {
+func blink(s tcell.Screen, letter rune, x, y int, mark bool) {
 	for i := 0; i < 5; i++ {
 		s.SetContent(x, y, letter, nil, tcell.StyleDefault.Background(tcell.ColorRed))
 		s.Sync()
 		time.Sleep(50 * time.Millisecond)
-		s.SetContent(x, y, letter, nil, tcell.StyleDefault)
+		if mark {
+			s.SetContent(x, y, letter, nil, tcell.StyleDefault.Background(tcell.ColorGreen))
+		} else {
+			s.SetContent(x, y, letter, nil, tcell.StyleDefault)
+		}
 		s.Sync()
 	}
 }
