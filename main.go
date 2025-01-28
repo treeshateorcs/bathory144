@@ -61,8 +61,8 @@ func main() {
 	result, marks := print(s)
 	s.Sync()
 	start := time.Now()
-	for abc != "" {
-		go func() {
+	go func() {
+		for {
 			timestring := fmt.Sprintf("%s", time.Since(start).Abs().Round(time.Second))
 			length := len(timestring)
 			for i := w - length; i < w; i++ {
@@ -70,8 +70,14 @@ func main() {
 			}
 			time.Sleep(1 * time.Second)
 			s.Sync()
-		}()
+		}
+	}()
+	for {
 		switch ev := s.PollEvent().(type) {
+		case *tcell.EventResize:
+			//		s.Fini()
+			//		fmt.Println("Resizing is unsupported")
+			//		os.Exit(1)
 		case *tcell.EventKey:
 			if ev.Key() == tcell.KeyEscape || ev.Rune() == 'q' || ev.Key() == tcell.KeyCtrlC {
 				s.Fini()
