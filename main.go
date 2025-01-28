@@ -11,6 +11,12 @@ import (
 
 var abc string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+func init() {
+	if len(os.Args) != 1 {
+		abc = os.Args[1]
+	}
+}
+
 func main() {
 	s, e := tcell.NewScreen()
 	if e != nil {
@@ -25,35 +31,39 @@ func main() {
 	result := print(s)
 	s.Sync()
 	start := time.Now()
-	for {
+	for abc != "" {
 		go func() {
 			w, h := s.Size()
-			elapsed := time.Since(start)
-			length := len(elapsed.String())
-			for i := w - length; i < w; i++ {
-				s.SetContent(i, h-1, rune(elapsed.String()[i-w+length]), nil, tcell.StyleDefault.Reverse(true))
+			elapsed := time.Since(start).Abs().Seconds()
+			minutes := 0
+			seconds := 0
+			timeline := ""
+			if elapsed >= 60 {
+				minutes = int(elapsed) / 60
+				seconds = int(elapsed) % 60
+				timeline = fmt.Sprintf("%d min %d sec", minutes, seconds)
+			} else {
+				timeline = fmt.Sprintf("%.0f sec", elapsed)
 			}
+			length := len(timeline)
+			for i := w - length; i < w; i++ {
+				s.SetContent(i, h-1, rune(timeline[i-w+length]), nil, tcell.StyleDefault.Reverse(true))
+			}
+			time.Sleep(1 * time.Second)
 			s.Sync()
 		}()
 		switch ev := s.PollEvent().(type) {
-		case *tcell.EventResize:
-			result = print(s)
 		case *tcell.EventKey:
 			if ev.Key() == tcell.KeyEscape {
 				s.Fini()
 				os.Exit(0)
 			}
-			if ev.Key() == tcell.KeyRune {
-				if ev.Rune() == 'r' {
-					result = print(s)
-				}
-			}
 		case *tcell.EventMouse:
+			w, h := s.Size()
 			x, y := ev.Position()
 			switch ev.Buttons() {
 			case tcell.ButtonPrimary:
 				if abc[0] == byte(result[x][y]) {
-					w, h := s.Size()
 					for i := 0; i < w; i++ {
 						for j := 0; j < h; j++ {
 							if abc[0] == byte(result[i][j]) {
@@ -67,7 +77,14 @@ func main() {
 				}
 			}
 		}
+		if len(abc) > 0 {
+			s.SetContent(0, 0, rune(abc[0]), nil, tcell.StyleDefault.Reverse(true))
+		} else {
+			break
+		}
 	}
+	s.Fini()
+	fmt.Printf("You win! %s\n", time.Since(start))
 }
 
 func blink(s tcell.Screen, letter rune, x, y int) {
