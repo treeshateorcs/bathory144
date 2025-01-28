@@ -9,11 +9,16 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-var abc string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+var (
+	abc    string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	errors        = 0
+	lent          = 0
+)
 
 func init() {
 	if len(os.Args) != 1 {
 		abc = os.Args[1]
+		lent = len(abc)
 	} else {
 		fmt.Printf("Usage: %s [set of symbols]\n", os.Args[0])
 		os.Exit(1)
@@ -32,8 +37,7 @@ func main() {
 	}
 	s.EnableMouse()
 	w, h := s.Size()
-	result := print(s)
-	marks := make([]bool, w*h)
+	result, marks := print(s)
 	s.Sync()
 	start := time.Now()
 	for abc != "" {
@@ -72,13 +76,13 @@ func main() {
 						for j := 0; j < h; j++ {
 							if abc[0] == byte(result[i][j]) {
 								s.SetContent(i, j, result[i][j], nil, tcell.StyleDefault.Background(tcell.ColorGreen))
-								marks[i*j] = true
+								marks[i][j] = true
 							}
 						}
 					}
 					_, abc = abc[0], abc[1:]
 				} else {
-					blink(s, result[x][y], x, y, marks[x*y])
+					blink(s, result[x][y], x, y, marks[x][y])
 				}
 			}
 		}
@@ -92,10 +96,11 @@ func main() {
 		}
 	}
 	s.Fini()
-	fmt.Printf("You win! %s\n", time.Since(start))
+	fmt.Printf("You win! %s. %dx%d matrix. %d characters long set. %d errors\n", time.Since(start), w, h, lent, errors)
 }
 
 func blink(s tcell.Screen, letter rune, x, y int, mark bool) {
+	errors++
 	for i := 0; i < 5; i++ {
 		s.SetContent(x, y, letter, nil, tcell.StyleDefault.Background(tcell.ColorRed))
 		s.Sync()
@@ -109,11 +114,15 @@ func blink(s tcell.Screen, letter rune, x, y int, mark bool) {
 	}
 }
 
-func print(s tcell.Screen) [][]rune {
+func print(s tcell.Screen) ([][]rune, [][]bool) {
 	w, h := s.Size()
 	result := make([][]rune, w)
+	marks := make([][]bool, w)
 	for i := range result {
 		result[i] = make([]rune, h)
+	}
+	for i := range marks {
+		marks[i] = make([]bool, h)
 	}
 	for i := 0; i < w; i++ {
 		for j := 0; j < h; j++ {
@@ -123,5 +132,5 @@ func print(s tcell.Screen) [][]rune {
 			s.SetContent(i, j, letter, nil, tcell.StyleDefault)
 		}
 	}
-	return result
+	return result, marks
 }
