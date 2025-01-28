@@ -63,20 +63,10 @@ func main() {
 	start := time.Now()
 	for abc != "" {
 		go func() {
-			elapsed := time.Since(start).Abs().Seconds()
-			minutes := 0
-			seconds := 0
-			timeline := ""
-			if elapsed >= 60 {
-				minutes = int(elapsed) / 60
-				seconds = int(elapsed) % 60
-				timeline = fmt.Sprintf("%d min %d sec", minutes, seconds)
-			} else {
-				timeline = fmt.Sprintf("%.0f sec", elapsed)
-			}
-			length := len(timeline)
+			timestring := fmt.Sprintf("%s", time.Since(start).Abs().Round(time.Second))
+			length := len(timestring)
 			for i := w - length; i < w; i++ {
-				s.SetContent(i, h-1, rune(timeline[i-w+length]), nil, tcell.StyleDefault.Reverse(true))
+				s.SetContent(i, h-1, rune(timestring[i-w+length]), nil, tcell.StyleDefault.Reverse(true))
 			}
 			time.Sleep(1 * time.Second)
 			s.Sync()
