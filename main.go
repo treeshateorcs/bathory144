@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	"golang.org/x/term"
 )
 
 var (
@@ -20,8 +21,23 @@ func init() {
 		abc = os.Args[1]
 		lent = len(abc)
 	} else {
-		fmt.Printf("Usage: %s [set of symbols]\n", os.Args[0])
-		os.Exit(1)
+		fmt.Printf("Usage: %s [set of characters]\nPress any key to continue with default set, \"q\" to quit.\n", os.Args[0])
+		oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+		if err != nil {
+			fmt.Println("Error setting terminal to raw mode:", err)
+			os.Exit(1)
+		}
+		defer term.Restore(int(os.Stdin.Fd()), oldState)
+
+		buf := make([]byte, 1)
+		_, err = os.Stdin.Read(buf)
+		if err != nil {
+			fmt.Printf("Error reading from standard input: %s", err)
+			os.Exit(1)
+		}
+		if buf[0] == 'q' {
+			os.Exit(1)
+		}
 	}
 }
 
@@ -62,7 +78,7 @@ func main() {
 		}()
 		switch ev := s.PollEvent().(type) {
 		case *tcell.EventKey:
-			if ev.Key() == tcell.KeyEscape {
+			if ev.Key() == tcell.KeyEscape || ev.Rune() == 'q' || ev.Key() == tcell.KeyCtrlC {
 				s.Fini()
 				os.Exit(0)
 			}
