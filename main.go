@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	abc    string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	errors        = 0
-	lent          = 0
+	abc       string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	misclicks        = 0
+	lent             = 52
 )
 
 func init() {
@@ -53,6 +53,11 @@ func main() {
 	}
 	s.EnableMouse()
 	w, h := s.Size()
+	if w < 80 || h < 20 {
+		s.Fini()
+		fmt.Println("minimum window size is 80x20")
+		os.Exit(1)
+	}
 	result, marks := print(s)
 	s.Sync()
 	start := time.Now()
@@ -112,11 +117,11 @@ func main() {
 		}
 	}
 	s.Fini()
-	fmt.Printf("You win! %s. %dx%d matrix. %d characters long set. %d errors\n", time.Since(start), w, h, lent, errors)
+	fmt.Printf("You win! %s. %dx%d matrix. %d characters long set. %d misclicks\n", time.Since(start), w, h, lent, misclicks)
 }
 
 func blink(s tcell.Screen, letter rune, x, y int, mark bool) {
-	errors++
+	misclicks++
 	for i := 0; i < 5; i++ {
 		s.SetContent(x, y, letter, nil, tcell.StyleDefault.Background(tcell.ColorRed))
 		s.Sync()
